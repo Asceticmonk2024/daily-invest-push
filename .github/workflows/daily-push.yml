@@ -15,5 +15,5 @@ jobs:
       - run: python daily_briefing.py
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          PUSH_CHANNEL: ${{ secrets.PUSH_CHANNEL }}
-          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
