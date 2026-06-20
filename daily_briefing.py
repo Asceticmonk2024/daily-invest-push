@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 💰 莎总你好 — 每日投资早报 全能版
-双通道推送：Server酱 → 你自己 | WxPusher → 莎总（都免费、不实名）
+双 Server酱推送：你 + 莎总（都用方糖服务号，稳定免费）
 """
 
 import os, sys, requests
@@ -16,10 +16,8 @@ DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 GF_NAME = os.environ.get("GF_NAME", "莎总")
 ENABLE_BTC = os.environ.get("ENABLE_BTC", "true").lower() == "true"
 
-# 推送配置
-SERVERCHAN_KEY = os.environ.get("SERVERCHAN_KEY", "")      # 你的 Server酱
-WXPUSHER_TOKEN = os.environ.get("WXPUSHER_TOKEN", "")      # WxPusher APP Token
-WXPUSHER_UID = os.environ.get("WXPUSHER_UID", "")          # 莎总的 UID
+SERVERCHAN_KEY = os.environ.get("SERVERCHAN_KEY", "")
+SERVERCHAN_KEY_GF = os.environ.get("SERVERCHAN_KEY_GF", "")
 
 # ============================================================
 #  30天循环课程表
@@ -100,17 +98,17 @@ def generate_briefing():
                  f"{GF_NAME}你好！日报来啦～", f"叮咚～{GF_NAME}的投资助手上线！",
                  f"{GF_NAME}早！知识就是力量💡", f"{GF_NAME}做最有钱的自己！"]
     title = f"{GF_NAME}你好 | {ds} 周{wd}"
-    parts = [f"## {greetings[doy%len(greetings)]}\n", f"*{ds} 星期{wd} · 第{doy%len(LESSONS)+1}课*\n", "---\n"]
+    parts = [f"## {greetings[doy % len(greetings)]}\n", f"*{ds} 星期{wd} · 第{doy % len(LESSONS) + 1}课*\n", "---\n"]
 
-    modules = [("📊","美股速览",PROMPT_US,f"分析{dq}美股。"),
-               ("🇨🇳","A股 & 基金",PROMPT_CN,f"分析{dq}A股基金。"),
-               ("🌍","国际大事",PROMPT_GEO,f"分析{dq}国际事件对金融影响。"),
-               ("🌊","资金面",PROMPT_MACRO,f"分析{dq}流动性。")]
+    modules = [("📊", "美股速览", PROMPT_US, f"分析{dq}美股。"),
+               ("🇨🇳", "A股 & 基金", PROMPT_CN, f"分析{dq}A股基金。"),
+               ("🌍", "国际大事", PROMPT_GEO, f"分析{dq}国际事件对金融影响。"),
+               ("🌊", "资金面", PROMPT_MACRO, f"分析{dq}流动性。")]
     if ENABLE_BTC:
-        modules.append(("₿","比特币",PROMPT_BTC,f"分析{dq}BTC。"))
+        modules.append(("₿", "比特币", PROMPT_BTC, f"分析{dq}BTC。"))
     total = len(modules) + 2
 
-    for i,(icon,name,prompt,query) in enumerate(modules,1):
+    for i, (icon, name, prompt, query) in enumerate(modules, 1):
         print(f"{icon} [{i}/{total}] {name}...")
         try:
             r = call_deepseek(prompt, query)
@@ -119,10 +117,10 @@ def generate_briefing():
             print(f"  ⚠️ 失败: {e}")
             parts.append(f"### {icon} {name}\n\n> 数据获取中～\n\n---\n")
 
-    print(f"📖 [{len(modules)+1}/{total}] 课堂：{lesson['topic']}...")
+    print(f"📖 [{len(modules) + 1}/{total}] 课堂：{lesson['topic']}...")
     try:
         r = call_deepseek(get_lesson_prompt(lesson), f"今天是{dq}，结合市场来教。")
-        parts.append(f"### 📖 莎总课堂 · 第{doy%len(LESSONS)+1}课\n\n**{lesson['topic']}**\n\n{r}\n\n---\n")
+        parts.append(f"### 📖 莎总课堂 · 第{doy % len(LESSONS) + 1}课\n\n**{lesson['topic']}**\n\n{r}\n\n---\n")
     except Exception as e:
         print(f"  ⚠️ 失败: {e}")
 
@@ -137,39 +135,23 @@ def generate_briefing():
     return title, "\n".join(parts)
 
 # ============================================================
-#  推送
+#  Server酱推送
 # ============================================================
-def push_serverchan(title, body):
-    if not SERVERCHAN_KEY:
-        print("⏭️  Server酱未配置，跳过"); return
-    resp = requests.post(f"https://sctapi.ftqq.com/{SERVERCHAN_KEY}.send",
-                         json={"title": title, "desp": body}, timeout=15)
-    resp.raise_for_status()
-    r = resp.json()
-    if r.get("code") == 0:
-        print("✅ Server酱 → 你自己：成功！")
-    else:
-        print(f"⚠️ Server酱失败: {r}")
-
-def push_wxpusher(title, body):
-    if not WXPUSHER_TOKEN or not WXPUSHER_UID:
-        print("⏭️  WxPusher未配置，跳过"); return
-    # WxPusher 支持 HTML，把 Markdown 简单转一下
-    html_body = body.replace("\n", "<br>")
-    resp = requests.post("https://wxpusher.zjiecode.com/api/send/message",
-                         json={
-                             "appToken": WXPUSHER_TOKEN,
-                             "content": html_body,
-                             "summary": title[:100],
-                             "contentType": 2,
-                             "uids": [uid.strip() for uid in WXPUSHER_UID.split(",") if uid.strip()],
-                         }, timeout=15)
-    resp.raise_for_status()
-    r = resp.json()
-    if r.get("success"):
-        print(f"✅ WxPusher → {GF_NAME}：成功！")
-    else:
-        print(f"⚠️ WxPusher失败: {r}")
+def send_serverchan(key, label, title, body):
+    if not key:
+        print(f"⏭️  {label}未配置，跳过")
+        return
+    try:
+        resp = requests.post(f"https://sctapi.ftqq.com/{key}.send",
+                             json={"title": title, "desp": body}, timeout=15)
+        resp.raise_for_status()
+        r = resp.json()
+        if r.get("code") == 0:
+            print(f"✅ {label}：推送成功！")
+        else:
+            print(f"⚠️ {label}推送失败: {r}")
+    except Exception as e:
+        print(f"⚠️ {label}推送异常: {e}")
 
 # ============================================================
 #  主函数
@@ -180,19 +162,21 @@ def main():
     print("=" * 50)
     if not DEEPSEEK_API_KEY:
         print("❌ 请设置 DEEPSEEK_API_KEY"); sys.exit(1)
-    if not SERVERCHAN_KEY and not WXPUSHER_TOKEN:
-        print("❌ 至少配置一个推送渠道"); sys.exit(1)
+    if not SERVERCHAN_KEY and not SERVERCHAN_KEY_GF:
+        print("❌ 至少配置一个 SERVERCHAN_KEY"); sys.exit(1)
 
     doy = datetime.now(timezone(timedelta(hours=8))).timetuple().tm_yday
     print(f"🤖 DeepSeek ({DEEPSEEK_MODEL})")
-    print(f"📱 Server酱: {'✅' if SERVERCHAN_KEY else '❌'}")
-    print(f"📱 WxPusher: {'✅' if WXPUSHER_TOKEN else '❌'}")
-    print(f"📖 今日课程: {LESSONS[doy%len(LESSONS)]['topic']}\n")
+    print(f"📱 你的Server酱: {'✅' if SERVERCHAN_KEY else '❌'}")
+    print(f"📱 {GF_NAME}的Server酱: {'✅' if SERVERCHAN_KEY_GF else '❌'}")
+    print(f"📖 今日课程: {LESSONS[doy % len(LESSONS)]['topic']}\n")
 
     title, body = generate_briefing()
     print(f"\n📝 早报 {len(body)} 字\n📤 推送中...\n")
-    push_serverchan(title, body)
-    push_wxpusher(title, body)
+
+    send_serverchan(SERVERCHAN_KEY, "Server酱 → 你自己", title, body)
+    send_serverchan(SERVERCHAN_KEY_GF, f"Server酱 → {GF_NAME}", title, body)
+
     print(f"\n🎉 完毕！")
 
 if __name__ == "__main__":
