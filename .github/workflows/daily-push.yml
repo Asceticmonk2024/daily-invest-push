@@ -16,4 +16,5 @@ jobs:
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+          SERVERCHAN_KEY_GF: ${{ secrets.SERVERCHAN_KEY_GF }}
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
