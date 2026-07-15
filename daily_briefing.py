@@ -17,6 +17,7 @@ TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 GF_NAME = os.environ.get("GF_NAME", "莎总")
 ENABLE_BTC = os.environ.get("ENABLE_BTC", "true").lower() == "true"
 SERVERCHAN_KEY = os.environ.get("SERVERCHAN_KEY", "")
+SERVERCHAN_KEY_GF = os.environ.get("SERVERCHAN_KEY_GF", "")
 
 # ============================================================
 #  30天投资课程表
@@ -343,8 +344,8 @@ def main():
     print("=" * 50)
     if not DEEPSEEK_API_KEY:
         print("❌ 请设置 DEEPSEEK_API_KEY"); sys.exit(1)
-    if not SERVERCHAN_KEY:
-        print("❌ 请设置 SERVERCHAN_KEY"); sys.exit(1)
+    if not SERVERCHAN_KEY and not SERVERCHAN_KEY_GF:
+        print("❌ 至少配置一个 SERVERCHAN_KEY"); sys.exit(1)
     if not TAVILY_API_KEY:
         print("⚠️ TAVILY_API_KEY 未设置，求职模块将使用AI推荐而非联网搜索")
 
@@ -354,13 +355,18 @@ def main():
 
     print(f"🤖 DeepSeek ({DEEPSEEK_MODEL})")
     print(f"🔍 Tavily: {'✅' if TAVILY_API_KEY else '❌'}")
+    print(f"📱 你的Server酱: {'✅' if SERVERCHAN_KEY else '❌'}")
+    print(f"📱 {GF_NAME}的Server酱: {'✅' if SERVERCHAN_KEY_GF else '❌'}")
     print(f"📖 投资课: {LESSONS[doy % len(LESSONS)]['topic']}")
     print(f"🏢 求职方向: {job['focus']}")
     print()
 
     title, body = generate_briefing()
     print(f"\n📝 早报 {len(body)} 字\n📤 推送中...\n")
-    send_serverchan(SERVERCHAN_KEY, f"Server酱 → {GF_NAME}", title, body)
+
+    send_serverchan(SERVERCHAN_KEY, "Server酱 → 你自己", title, body)
+    send_serverchan(SERVERCHAN_KEY_GF, f"Server酱 → {GF_NAME}", title, body)
+
     print(f"\n🎉 完毕！")
 
 if __name__ == "__main__":
